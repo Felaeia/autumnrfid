@@ -170,6 +170,15 @@ func removeWhitespace(s string) string {
 	return result.String()
 }
 
+type Client struct {
+	channel chan string
+}
+
+var (
+	clients    = make(map[*Client]bool)
+	clientsMux sync.Mutex
+)
+
 // HandleSSE establishes a server-sent events connection
 func (h *AppHandler) HandleSSE(c *fiber.Ctx) error {
 	c.Set("Content-Type", "text/event-stream")
@@ -179,6 +188,21 @@ func (h *AppHandler) HandleSSE(c *fiber.Ctx) error {
 
 	// Log SSE connection
 	fmt.Printf("SSE connection established from %s\n", c.IP())
+
+	client := &Client{
+		channel: make(chan string, 10),
+	}
+
+	clientsMux.Lock()
+	clients[client] = true
+	clientsMux.Unlock()
+
+	// defer func() {
+	// 	clientsMux.Lock()
+	// 	delete(clients, client)
+	// 	close(client.channel)
+	// 	clientsMux.Unlock()
+	// }()
 
 	// Send initial connection message
 	initMessage := "event: connected\ndata: {\"time\": \"" + time.Now().Format(time.RFC3339) + "\", \"status\": \"connected\"}\n\n"
@@ -191,8 +215,9 @@ func (h *AppHandler) HandleSSE(c *fiber.Ctx) error {
 
 	// Setup cleanup when connection is closed
 	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
-		ticker := time.NewTicker(10 * time.Second)
-		defer ticker.Stop()
+		// ticker := time.NewTicker(10 * time.Second)
+		// defer ticker.Stop()
+		w.Flush()
 
 		// Send initial message first
 		if fw, err := w.Write([]byte(initMessage)); err != nil || fw == 0 {
@@ -226,17 +251,28 @@ func (h *AppHandler) HandleSSE(c *fiber.Ctx) error {
 			// 		close(done)
 			// 		return
 			// 	}
-			case msg := <-eventsChannel:
+			case msg, ok := <-eventsChannel:
 				// Send message from broadcaster
+				if !ok {
+					return
+				}
+
+				_, err := fmt.Fprintf(w, "data: %s\n\n", msg)
+				if err != nil {
+					fmt.Println("Client is disconnected!")
+					return
+				}
+
+				if err := w.Flush(); err != nil {
+					fmt.Printf("Error flushing SSE message: %v\n", err)
+					close(done)
+					return
+				}
+
 				fmt.Printf("Broadcasting message: %s\n", msg)
 				fw, err := w.Write([]byte(msg))
 				if err != nil || fw == 0 {
 					fmt.Printf("Error sending SSE message: %v\n", err)
-					close(done)
-					return
-				}
-				if err = w.Flush(); err != nil {
-					fmt.Printf("Error flushing SSE message: %v\n", err)
 					close(done)
 					return
 				}

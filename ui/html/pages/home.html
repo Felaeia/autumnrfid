@@ -436,25 +436,12 @@
                 // Test function for not found
                 function testNotFound() {
                     // Update visibility with same approach as event handler
-                    document
-                        .getElementById("welcome-section")
-                        .classList.add("hidden");
-                    document.getElementById(
-                        "welcome-section",
-                    ).style.display = "none";
-
-                    document
-                        .getElementById("student-data-container")
-                        .classList.add("hidden");
-                    document.getElementById(
-                        "student-data-container",
-                    ).style.display = "none";
-
-                    document
-                        .getElementById("error-page")
-                        .classList.remove("hidden");
-                    document.getElementById("error-page").style.display =
-                        "flex";
+                    document.getElementById("welcome-section").classList.add("hidden");
+                    document.getElementById("welcome-section").style.display = "none";
+                    document.getElementById("student-data-container").classList.add("hidden");
+                    document.getElementById("student-data-container").style.display = "none";
+                    document.getElementById("error-page").classList.remove("hidden");
+                    document.getElementById("error-page").style.display = "flex";
                 }
             </script>
         </div>

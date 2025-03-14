@@ -13,6 +13,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/template/html/v2"
 )
 
@@ -62,6 +63,8 @@ func main() {
 		AllowCredentials: true, // Keep credentials enabled for cookies/auth
 		ExposeHeaders:    "Content-Type, Content-Length, Content-Disposition",
 	}))
+
+	app.Use(logger.New())
 
 	// Serve static files
 	app.Static("/ui/static", "./ui/static")
