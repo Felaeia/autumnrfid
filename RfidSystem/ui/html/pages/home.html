@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/sse.js"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
+    <script src="https://unpkg.com/htmx-ext-sse@2.2.2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <title>RFID</title>
+    <link rel="stylesheet" href="/ui/static/styles.css" />
+</head>
+
+<body>
+
+    <div class="navbar">
+        <button hx-get="/" class="rfid">RFID</button>
+        <button hx-get="/test-grades" hx-swap="outerHTML" hx-target="#student-data-container"
+            class="rfid">Grades</button>
+        <button hx-get="/bills" hx-swap="outerHTML" hx-target="#student-data-container" class="rfid">Bills</button>
+    </div>
+
+    <!-- Error page for 404 not found -->
+    <!-- <div id="error-page" class="error-container hidden">
+        <div class="error-code">404</div>
+        <div class="error-message">Student Not Found</div>
+        <div class="error-details">
+            The student ID you're looking for doesn't exist in our
+            database.
+        </div>
+    </div> -->
+
+    </div>
+
+    <main>
+
+        <div class="container-home" id="student-data-container" hx-ext="sse" sse-connect="/stream"
+            sse-swap="studentcallback" hx-target=".container-home">
+
+            <div id="welcome-section" class="welcome-wrapper">
+                <div class="welcome-content">
+                    <h1>Welcome to RFID</h1>
+                    <p>Please scan your RFID card to view your student information.</p>
+                    <i class="scan-icon fas fa-qrcode"></i>
+                </div>
+            </div>
+
+            <div id="alternating-messages" class="message-wrapper">
+                <div class="message-content">
+                    <p class="message-item">View your current semester grades and academic progress</p>
+                    <p class="message-item">Check your class schedule and room assignments</p>
+                    <p class="message-item">Monitor your attendance and participation records</p>
+                    <p class="message-item">Access your tuition balance and payment deadlines</p>
+                    <p class="message-item">Stay updated with school announcements and events</p>
+                    <p class="message-item">Track your academic requirements and prerequisites</p>
+                </div>
+            </div>
+
+        </div>
+        <p hx-ext="sse" sse-connect="/stream" sse-swap="ping">asdf</p>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const messages = document.querySelectorAll('.message-item')
+            let currentIndex = 0
+
+            function showNextMessage() {
+                messages.forEach(msg => msg.classList.remove('active'))
+                messages[currentIndex].classList.add('active')
+                currentIndex = (currentIndex + 1) % messages.length
+            }
+
+            showNextMessage()
+            setInterval(showNextMessage, 4000)
+
+            // Add SSE ping logging
+            const sseSource = new EventSource('/stream')
+
+            sseSource.addEventListener('ping', function (e) {
+                console.log('SSE Ping received:', JSON.parse(e.data))
+            })
+
+            sseSource.addEventListener('connected', function (e) {
+                console.log('SSE Connected:', JSON.parse(e.data))
+            })
+
+            sseSource.onerror = function (e) {
+                console.error('SSE Error:', e)
+            }
+        })
+    </script>
+
+</body>
+
+</html>
