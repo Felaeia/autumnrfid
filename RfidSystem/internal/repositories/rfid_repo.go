@@ -44,7 +44,7 @@ type Bills struct {
 
 // Grades Data Structure
 type Grades struct {
-	Grade_ID            int
+	GradeID             int
 	StudentNumber       string
 	AcademicYear        string
 	FirstSemesterGrade  float64
@@ -63,7 +63,7 @@ func NewRFIDRepository(dbClient *DatabaseClient) *RFIDRepository {
 func (r *RFIDRepository) GetStudentByRFID(student_Number string) (*Student, error) {
 	query := `
 		SELECT student_Number, department_ID, first_Name, last_Name, middle_Name, year_Level, program, birthday, contact_Number, email, block, system_First_Access, system_Last_Access
-		FROM Students
+		FROM students
 		WHERE student_Number = ?
 	`
 
@@ -161,5 +161,36 @@ func (r *RFIDRepository) GetStudentBillsByRFID(student_Number string) (*Bills, e
 }
 
 func (r *RFIDRepository) GetStudentGradesByRFID(student_Number string) (*Grades, error) {
-	return nil, nil
+	query := `
+		SELECT 
+			grade_ID, 
+			student_Number, 
+			academic_Year,
+			first_Semester_Grade,
+			second_Semester_Grade
+		FROM grades
+		WHERE student_Number = ?
+	`
+
+	fmt.Printf("Executing query with student ID: %s\n", student_Number)
+
+	grades := &Grades{}
+	err := r.dbClient.DB.QueryRow(query, student_Number).Scan(
+		&grades.GradeID,
+		&grades.StudentNumber,
+		&grades.AcademicYear,
+		&grades.FirstSemesterGrade,
+		&grades.SecondSemesterGrade,
+	)
+
+	if err == sql.ErrNoRows {
+		fmt.Printf("No student found with ID: %s\n", student_Number)
+		return nil, nil
+	}
+	if err != nil {
+		fmt.Printf("Error querying student: %v\n", err)
+		return nil, fmt.Errorf("error querying student: %v", err)
+	}
+
+	return grades, nil
 }
