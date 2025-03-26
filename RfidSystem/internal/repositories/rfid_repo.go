@@ -24,7 +24,7 @@ type Student struct {
 
 // Bills Data Structure
 type Bills struct {
-	assessment_Number       int //Assessment Table PK
+	AssessmentNumber        int //Assessment Table PK
 	StudentNumber           string
 	PaymentNumber           int //Payment Table PK
 	TuitionAmt              float64
@@ -36,10 +36,10 @@ type Bills struct {
 	FullPaymentBeforePrelim float64
 	PerExamFee              float64
 	PaymentStatus           string
-	Date                    time.Time
-	Description             string
-	Amount                  float64
-	Status                  string
+	PaymentDate             time.Time
+	PaymentDescription      string
+	PaymentAmount           float64
+	PaymentHistoryStatus    string
 }
 
 // Grades Data Structure
@@ -98,32 +98,54 @@ func (r *RFIDRepository) GetStudentByRFID(student_Number string) (*Student, erro
 	return student, nil
 }
 
+// Query all student bills data in the db
 func (r *RFIDRepository) GetStudentBillsByRFID(student_Number string) (*Bills, error) {
 	query := `
-		SELECT assessment_Number, student_Number, payment_Number, tuition_Amt, misc_Fees_Name, misc_Fees_Amt, 
-		discount_Amt, initial_Payment, remaining_Balance, full_pmt_if_b4_prelim, per_Exam_Fee, payment_Status, payment_Number,
-		date, description, amount, status
-		FROM Bills
-		WHERE student_Number = ?
+	SELECT 
+		assess.assessment_Number,
+		assess.student_Number,
+		assess.payment_Number,
+		assess.tuition_Amt,
+		assess.misc_Fees_Name,
+		assess.misc_Fees_Amt,
+		assess.discount_Amt,
+		assess.initial_Payment,
+		assess.remaining_Balance,
+		assess.full_pmt_if_b4_prelim,
+		assess.per_Exam_Fee,
+		assess.payment_Status,
+		payHist.date,
+		payHist.description,
+		payHist.amount,
+		payHist.status
+	FROM assessment AS assess
+	LEFT JOIN payment_history AS payHist ON assess.payment_Number = payHist.payment_Number
+	WHERE assess.student_Number = ?
+
 	`
 
 	fmt.Printf("Executing query with student ID: %s\n", student_Number)
 
-	student := &Student{}
+	bill := &Bills{}
 	err := r.dbClient.DB.QueryRow(query, student_Number).Scan(
-		&student.Student_Number,
-		&student.DepartmentID,
-		&student.FirstName,
-		&student.LastName,
-		&student.MiddleName,
-		&student.YearLevel,
-		&student.Program,
-		&student.Birthday,
-		&student.Contact_Number,
-		&student.Email,
-		&student.Block,
-		&student.System_First_Access,
-		&student.System_Last_Access,
+		//Assessment Table
+		&bill.AssessmentNumber,
+		&bill.StudentNumber,
+		&bill.PaymentNumber,
+		&bill.TuitionAmt,
+		&bill.MiscFeesName,
+		&bill.MiscFeesAmt,
+		&bill.DiscountAmt,
+		&bill.InitialPayment,
+		&bill.RemainingBalance,
+		&bill.FullPaymentBeforePrelim,
+		&bill.PerExamFee,
+		&bill.PaymentStatus,
+		//Payment History Table
+		&bill.PaymentDate,
+		&bill.PaymentDescription,
+		&bill.PaymentAmount,
+		&bill.PaymentHistoryStatus,
 	)
 
 	if err == sql.ErrNoRows {
@@ -135,7 +157,7 @@ func (r *RFIDRepository) GetStudentBillsByRFID(student_Number string) (*Bills, e
 		return nil, fmt.Errorf("error querying student: %v", err)
 	}
 
-	return student, nil
+	return bill, nil
 }
 
 func (r *RFIDRepository) GetStudentGradesByRFID(student_Number string) (*Grades, error) {
