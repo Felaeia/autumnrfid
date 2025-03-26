@@ -154,7 +154,7 @@ func (h *AppHandler) HandleCardScan(ctx *fiber.Ctx) error {
 		// return ctx.Render("error_page", fiber.Map{})
 	}
 
-	fmt.Printf("Student found: %s\n", student.StudentID)
+	fmt.Printf("Student found: %s\n", student.Student_Number)
 
 	htmxInstruction := fmt.Sprintf(`<div hx-get="/student-partial/%s" hx-trigger="load" hx-swap="innerHTML" hx-target="#student-data-container"></div>`, rfid)
 
